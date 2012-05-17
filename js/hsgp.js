@@ -58,8 +58,9 @@ HSGPCanvas.prototype = {
     },
 
     draw : function () {
+        this.canvas.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
         this.canvas.fillStyle = "black";
-        this.canvas.fillRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+        this.canvas.fillRect(0, 0, this.totalWidth, this.totalHeight);
         this.drawBase();
         this.drawHighlights();
     },
@@ -72,6 +73,8 @@ HSGPCanvas.prototype = {
         var totalGridHeight = grid.summedLineHeights[grid.summedLineHeights.length - 1];
         this.pointWidth = Math.floor((width - totalGridWidth) / this.layout.width);
         this.pointHeight = Math.floor((height - totalGridHeight) / this.layout.height);
+        this.totalWidth = this.pointWidth * this.layout.width + totalGridWidth;
+        this.totalHeight = this.pointHeight * this.layout.height + totalGridHeight;
 
         this.xIndexCoord = new Array(this.layout.width + 1);
         for (var i = 0; i < this.layout.width; i++) {
@@ -249,7 +252,7 @@ Grid.prototype = {
             this.summedLineWidths[i] = this.summedLineWidths[i - 1];
             for (var j = 0; j < widthDimension; j++) {
                 if (i % (1 << j) === 0) {
-                    this.summedLineWidths[i] += 2;
+                    this.summedLineWidths[i] += 1;
                 }
             }
         }
@@ -261,7 +264,7 @@ Grid.prototype = {
             this.summedLineHeights[i] = this.summedLineHeights[i - 1];
             for (var j = 0; j < heightDimension; j++) {
                 if (i % (1 << j) === 0) {
-                    this.summedLineHeights[i] += 2;
+                    this.summedLineHeights[i] += 1;
                 }
             }
         }

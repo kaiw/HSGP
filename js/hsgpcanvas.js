@@ -43,17 +43,16 @@ function setup () {
         selectedChanged();
     });
 
-    $("#HSGPCanvas").resizable({
-        //containment: "parent", // FIXME: doesn't work for some reason
-        aspectRatio: 1.0,
-        stop: function(event, ui) {
-            var element = $("#HSGPCanvas");
-            // ui.size.* reports sizes slightly differently, and includes the padding
-            element[0].width = element.width();
-            element[0].height = element.height();
-            hsgp.canvasSizeChanged();
-        }
+    // TODO: Live-resizing could be very slow for high-dimensional canvases.
+    // It might be better to throttle the canvasSizeChanged() call.
+    var element = $("#HSGPCanvas");
+    $(window).resize(function(){
+        var container_width = $("#CanvasContainer").width();
+        element[0].width = container_width;
+        element[0].height = container_width;
+        hsgp.canvasSizeChanged();
     });
+    element.resize();
 }
 
 function selectedChanged() {
