@@ -1,0 +1,163 @@
+<!doctype html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<title>Hyperspace Graph Paper</title>
+	<meta name="description" content="Hyperspace Graph Paper - Visualising Boolean hypercubes">
+	<meta name="author" content="Kai Willadsen">
+
+	<meta name="viewport" content="width=device-width">
+
+	<link rel="stylesheet/less" href="less/style.less">
+	<script src="js/libs/less-1.3.0.min.js"></script>
+
+	<!-- Use SimpLESS (Win/Linux/Mac) or LESS.app (Mac) to compile your .less files
+	to style.css, and replace the 2 lines above by this one:
+
+	<link rel="stylesheet" href="less/style.css">
+	 -->
+
+	<script src="js/libs/modernizr-2.5.3-respond-1.1.0.min.js"></script>
+</head>
+<body>
+<!--[if lt IE 7]><p class=chromeframe>Your browser is <em>ancient!</em> <a href="http://browsehappy.com/">Upgrade to a different browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to experience this site.</p><![endif]-->
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="#">Project name</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li class="active"><a href="#">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <!-- Main hero unit for a primary marketing message or call to action -->
+      <div class="hero-unit">
+        <h1>Hyperspace Graph Paper</h1>
+        <p>Visualising Boolean hypercubes</p>
+        <p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+      </div>
+
+      <div class="row">
+        <div class="span8 offset1">
+          <div id="CanvasContainer">
+            <div class="ui-wrapper" style="overflow: hidden; position: relative; width: 402px; height: 402px; top: 0px; left: 0px; margin: 0px;">
+              <canvas id="HSGPCanvas" width="384" height="384" class="ui-state-default ui-corner-all ui-resizable" style="padding: 8px; margin: 0px; position: static; display: block; height: 384px; width: 384px;"></canvas>
+              <div style="-moz-user-select: none;" unselectable="on" class="ui-resizable-handle ui-resizable-e"></div>
+              <div style="-moz-user-select: none;" unselectable="on" class="ui-resizable-handle ui-resizable-s"></div>
+              <div unselectable="on" style="z-index: 1001; -moz-user-select: none;" class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se"></div>
+            </div>
+            <div style="margin: 6px 0px; padding: 3px 6px;">
+              Selected state: <span id="SelectedStateLabel"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="span3">
+          <div>
+            <div>
+              <h3>Attractor &amp; basin growth</h3>
+              <div id="GrowthSelector"></div>
+            </div>
+            <div>
+              <h3>Drosophila &amp; yeast</h3>
+              <div id="DrosYeastSelector">
+              </div>
+            </div>
+          </div>
+
+          <div class="ui-widget" id="Status" style="margin-top: 10px; display: none;">
+            <div class="ui-state-highlight ui-corner-all" style="padding: 0.5em .7em;">
+              <p><span class="ui-icon ui-icon-info" id="StatusIcon" style="float: left; margin-right: .3em;"></span>
+              <span id="StatusLabel"></span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="span6 offset3">
+          <h2>About Hyperspace Graph Paper</h2>
+          <p>
+          Hyperspace Graph Paper (HSGP) is a visualisation technique used for
+          navigating through Boolean hyperspaces, and for viewing structure in the state
+          space of Boolean systems.
+          </p>
+          <p>
+          HSGP uses a dimensional unfolding trick to provide a two-dimensional
+          projection of a high-dimensional Boolean space. In short, odd
+          dimensions are unfolded horizontally and even dimensions are
+          unfolded vertically. If you draw a square and label the corners (0,0), (0,1), (1,0),
+          (1,1) going from top-left to bottom-right, it's like that&hellip; except that you
+          keep going. For a more comprehensive explanation, try out the demo above, or
+          read some of the references.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="span6 offset3">
+          <h2>References</h2>
+          <p>
+          Wiles, J. and Tonkes, B. (2002). Visualisation of hierarchical cost
+surfaces for evolutionary computation. In Proceedings of the 2002 Congress on
+Evolutionary Computation, 157-162.
+          </p>
+
+          <p>
+          Willadsen, K. and Wiles, J. (2007). &ldquo;Robustness and state-space
+          structure of Boolean gene regulatory models&rdquo;. <i>Journal of
+          Theoretical Biology</i>, <b>249</b> (4), 749-765.
+          doi: <a href="http://dx.doi.org/10.1016/j.jtbi.2007.09.004">10.1016/j.jtbi.2007.09.004</a>
+          </p>
+        </div>
+      </div>
+
+      <hr>
+
+      <footer>
+        <p>&copy; Kai Willadsen 2012</p>
+      </footer>
+
+    </div> <!-- /container -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="js/libs/jquery-1.7.2.min.js"><\/script>')</script>
+
+<script src="js/libs/bootstrap/bootstrap.min.js"></script>
+
+<script src="js/script.js"></script>
+<script>
+	var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+	(function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+	g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+	s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+<!-- FIXME: wow, no -->
+
+<script type="text/javascript" src="js/state.js"></script>
+<script type="text/javascript" src="js/hsgp.js"></script>
+<script type="text/javascript" src="js/hsgpcanvas.js"></script>
+
+<!-- FIXME: holy shit no -->
+<script type="text/javascript">$(document).ready(function () {setup();});</script>
+
+</body>
+</html>
