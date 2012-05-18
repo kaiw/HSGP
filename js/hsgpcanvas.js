@@ -11,11 +11,6 @@ function setup () {
         $(where).append(whole);
     }
 
-    function prependSchemaLink (file, label, where) {
-        var link = "javascript:loadSchemaFile('schemas/" + file + ".schema'); return false;";
-        var whole = "<a href=\"#\" onclick=\"" + link + "\">" + label + "</a><br>";
-        $(where).prepend(whole);
-    }
 
     addSchemaLink("growthAttractor9", "Attractor 9 states", "#GrowthSelector");
     addSchemaLink("growthAttractor37", "Attractor 37 states", "#GrowthSelector");
@@ -24,8 +19,8 @@ function setup () {
     addSchemaLink("growthBasin37", "Basin 37 states", "#GrowthSelector");
     addSchemaLink("growthBasin93", "Basin 93 states", "#GrowthSelector");
 
-    prependSchemaLink("Yeast", "Yeast", "#DrosYeastSelector");
-    prependSchemaLink("DrosophilaPruned", "Drosophila (pruned)", "#DrosYeastSelector");
+    addSchemaLink("DrosophilaPruned", "Drosophila (pruned)", "#DrosYeastSelector");
+    addSchemaLink("Yeast", "Yeast", "#DrosYeastSelector");
 
     $("#HSGPCanvas").click(function (event) {
         var element = $(this);
@@ -52,7 +47,7 @@ function setup () {
         element[0].height = container_width;
         hsgp.canvasSizeChanged();
     });
-    element.resize();
+    $(window).resize();
 }
 
 function selectedChanged() {
@@ -70,18 +65,18 @@ function selectedChanged() {
     hsgp.draw();
 }
 
-function setStatus(msg, cls, icon) {
+function setStatus(msg, cls) {
     if (statusTimeoutId !== null) {
         clearTimeout(statusTimeoutId);
         statusTimeoutId = null;
     }
     var status = $("#Status");
-    status.stop(false, true);
-    status.children().removeClass("ui-state-error ui-state-highlight").addClass(cls);
-    $("#StatusIcon").removeClass("ui-icon-info ui-icon-alert").addClass(icon);
+    status.stop(false, true); // FIXME: what?
+    status.removeClass("alert-success alert-error").addClass(cls);
     $("#StatusLabel").html(document.createTextNode(msg));
     status.fadeIn("normal");
-    statusTimeoutId = setTimeout(function () {statusTimeoutId = null; status.fadeOut("normal");}, 5000);
+    statusTimeoutId = setTimeout(function () {statusTimeoutId = null; status.fadeOut("normal");}, 3000);
+    // FIXME: if it times out, it re-shows properly. If it's manually dismissed, it never comes back
 }
 
 function loadSchemaFile(file) {
@@ -94,12 +89,10 @@ function loadSchemaFileCallback(data) {
         var values = Schema.parseToValues(data);
     }
     catch (e) {
-        if (e instanceof SchemaParseException) {
-            setStatus(e, "ui-state-error", "ui-icon-alert");
-            return;
-        }
+        setStatus(e, "alert-error");
+        return;
     }
-    setStatus("Schema loaded", "ui-state-highlight", "ui-icon-info");
+    setStatus("Schema loaded", "alert-success");
     hsgp.updateStateValues(values);
     hsgp.setSelectedPoint(null);
     selectedChanged();
