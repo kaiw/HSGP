@@ -1,14 +1,14 @@
-
+"use strict";
 
 // FIXME: improve class
 // Used for both Layout-related and Canvas-related coordinates
-function Point(x_, y_) {
-    this.x = x_;
-    this.y = y_;
+function Point(x, y) {
+    this.x = x;
+    this.y = y;
 
     this.valid = function () {
         return (this.x >= 0 && this.y >= 0);
-    }
+    };
 }
 
 
@@ -29,7 +29,8 @@ HSGPCanvas.prototype = {
         if (values !== null && values !== undefined) {
             this.stateValues.setValues(values);
         }
-        this.layout = new RecursiveLayout(this.stateValues.dimensions, this.stateValues.numStates);
+        this.layout = new RecursiveLayout(this.stateValues.dimensions,
+                                          this.stateValues.numStates);
         this.colours = new ColourHandler(this.stateValues);
         this.highlights = [];
         this.selected = null;
@@ -44,8 +45,7 @@ HSGPCanvas.prototype = {
     setSelectedPoint : function (point) {
         if (point !== null && point.valid()) {
             this.selected = point;
-        }
-        else {
+        } else {
             this.selected = null;
         }
     },
@@ -57,6 +57,32 @@ HSGPCanvas.prototype = {
         return null;
     },
 
+    canvasSizeChanged : function () {
+        var i,
+            width = this.canvasElement.width,
+            height = this.canvasElement.height,
+            grid = new Grid(this.layout.width, this.layout.height),
+            totalGridWidth = _.last(grid.summedLineWidths),
+            totalGridHeight = _.last(grid.summedLineHeights);
+        this.pointWidth = Math.floor((width - totalGridWidth) / this.layout.width);
+        this.pointHeight = Math.floor((height - totalGridHeight) / this.layout.height);
+        this.totalWidth = this.pointWidth * this.layout.width + totalGridWidth;
+        this.totalHeight = this.pointHeight * this.layout.height + totalGridHeight;
+
+        this.xIndexCoord = new Array(this.layout.width + 1);
+        for (i = 0; i < this.layout.width; i++) {
+            this.xIndexCoord[i] = (i * this.pointWidth) + grid.summedLineWidths[i];
+        }
+        this.xIndexCoord[i] = this.xIndexCoord[i - 1] + this.pointWidth;
+
+        this.yIndexCoord = new Array(this.layout.height + 1);
+        for (i = 0; i < this.layout.height; i++) {
+            this.yIndexCoord[i] = (i * this.pointHeight) + grid.summedLineHeights[i];
+        }
+        this.yIndexCoord[i] = this.yIndexCoord[i - 1] + this.pointHeight;
+        this.draw();
+    },
+
     draw : function () {
         this.canvas.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
         this.canvas.fillStyle = "black";
@@ -65,47 +91,24 @@ HSGPCanvas.prototype = {
         this.drawHighlights();
     },
 
-    canvasSizeChanged : function () {
-        var width = this.canvasElement.width;
-        var height = this.canvasElement.height;
-        var grid = new Grid(this.layout.width, this.layout.height);
-        var totalGridWidth = grid.summedLineWidths[grid.summedLineWidths.length - 1];
-        var totalGridHeight = grid.summedLineHeights[grid.summedLineHeights.length - 1];
-        this.pointWidth = Math.floor((width - totalGridWidth) / this.layout.width);
-        this.pointHeight = Math.floor((height - totalGridHeight) / this.layout.height);
-        this.totalWidth = this.pointWidth * this.layout.width + totalGridWidth;
-        this.totalHeight = this.pointHeight * this.layout.height + totalGridHeight;
-
-        this.xIndexCoord = new Array(this.layout.width + 1);
-        for (var i = 0; i < this.layout.width; i++) {
-            this.xIndexCoord[i] = (i * this.pointWidth) + grid.summedLineWidths[i];
-        }
-        this.xIndexCoord[this.layout.width] = this.xIndexCoord[this.layout.width - 1] + this.pointWidth;
-
-        this.yIndexCoord = new Array(this.layout.height + 1);
-        for (var i = 0; i < this.layout.height; i++) {
-            this.yIndexCoord[i] = (i * this.pointHeight) + grid.summedLineHeights[i];
-        }
-        this.yIndexCoord[this.layout.height] = this.yIndexCoord[this.layout.height - 1] + this.pointHeight;
-        this.draw();
-    },
-
     drawBase : function () {
-        for (var i = 0, len = this.stateValues.states.length; i < len; ++i) {
-            var state = this.stateValues.states[i];
-            var stateValue = this.stateValues.valueInt(i);
-            var coord = this.layoutToCanvas(this.layout.stateToPoint(state));
+        var i, len, state, stateValue, coord;
+        for (i = 0, len = this.stateValues.states.length; i < len; ++i) {
+            state = this.stateValues.states[i];
+            stateValue = this.stateValues.valueInt(i);
+            coord = this.layoutToCanvas(this.layout.stateToPoint(state));
             this.canvas.fillStyle = this.colours.grey(stateValue);
             this.canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
         }
     },
 
     drawHighlights : function () {
+        var coord;
         var targetValue = 0;
         if (this.selected !== null && this.selected.valid ()) {
             targetValue = this.stateValues.value(this.layout.pointToState(this.selected));
-            var coord = this.layoutToCanvas(this.selected);
             this.canvas.fillStyle = this.colours.green(targetValue);
+            coord = this.layoutToCanvas(this.selected);
             this.canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
         }
 
@@ -116,12 +119,11 @@ HSGPCanvas.prototype = {
 
             if (value === targetValue) {
                 col = this.colours.blue(value);
-            }
-            else {
+            } else {
                 col = this.colours.red(value);
             }
 
-            var coord = this.layoutToCanvas(point);
+            coord = this.layoutToCanvas(point);
             this.canvas.fillStyle = col;
             this.canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
         }
@@ -156,8 +158,9 @@ function StateValues(dimensions) {
 
 StateValues.prototype = {
     _init : function (dimensions) {
-        var values = new Array(1 << dimensions);
-        for (var i = 0, len = values.length; i < len; ++i) {
+        var i, len,
+            values = new Array(1 << dimensions);
+        for (i = 0, len = values.length; i < len; ++i) {
             values[i] = Math.floor(Math.random() * 4);
         }
         this.setValues(values);
@@ -165,8 +168,8 @@ StateValues.prototype = {
 
     setValues : function (values_) {
         this.values = values_;
-        this.minValue = Math.min.apply(null, values_);
-        this.maxValue = Math.max.apply(null, values_);
+        this.minValue = _.min(values_);
+        this.maxValue = _.max(values_);
         this.numStates = values_.length;
         this.dimensions = Math.round(Math.log(this.numStates) / Math.log(2));
 
@@ -195,7 +198,7 @@ RecursiveLayout.prototype = {
     _init : function (dimensions) {
         this.dims = dimensions;
         this.widthDims = (this.dims + this.dims % 2) / 2;
-        this.heightDims = (this.dims - this.dims % 2) / 2
+        this.heightDims = (this.dims - this.dims % 2) / 2;
         this.width = 1 << this.widthDims;
         this.height = 1 << this.heightDims;
     },
@@ -204,13 +207,12 @@ RecursiveLayout.prototype = {
         if (state.length !== this.dims) {
             return null;
         }
-        var x = 0, y = 0;
-        for (var i = 0; i < this.dims; ++i) {
+        var i = 0, x = 0, y = 0;
+        for (; i < this.dims; ++i) {
             if (state[i]) {
                 if (i % 2 === 0) {
                     x += 1 << (i / 2);
-                }
-                else {
+                } else {
                     y += 1 << ((i - 1) / 2);
                 }
             }
@@ -223,11 +225,12 @@ RecursiveLayout.prototype = {
             point.x < 0 || point.y < 0) {
             return null;
         }
+        var i;
         var state = new Array(this.dims);
-        for (var i = 0; i < this.widthDims; ++i) {
+        for (i = 0; i < this.widthDims; ++i) {
             state[i * 2] = Boolean(point.x & 1 << i);
         }
-        for (var i = 0; i < this.heightDims; ++i) {
+        for (i = 0; i < this.heightDims; ++i) {
             state[i * 2 + 1] = Boolean(point.y & 1 << i);
         }
         return state;
@@ -242,17 +245,19 @@ function Grid(width, height) {
 
 Grid.prototype = {
     _init : function (width, height) {
+        var line_increment = 1;
         var borderWidth = 4;
         var widthDimension = Math.log(width) / Math.LN2;
         var heightDimension = Math.log(height) / Math.LN2;
+        var i, j;
 
         this.summedLineWidths = new Array(width + 1);
         this.summedLineWidths[0] = borderWidth;
-        for (var i = 1; i < width; ++i) {
+        for (i = 1; i < width; ++i) {
             this.summedLineWidths[i] = this.summedLineWidths[i - 1];
-            for (var j = 0; j < widthDimension; j++) {
+            for (j = 0; j < widthDimension; j++) {
                 if (i % (1 << j) === 0) {
-                    this.summedLineWidths[i] += 1;
+                    this.summedLineWidths[i] += line_increment;
                 }
             }
         }
@@ -260,11 +265,11 @@ Grid.prototype = {
 
         this.summedLineHeights = new Array(height + 1);
         this.summedLineHeights[0] = borderWidth;
-        for (var i = 1; i < height; ++i) {
+        for (i = 1; i < height; ++i) {
             this.summedLineHeights[i] = this.summedLineHeights[i - 1];
-            for (var j = 0; j < heightDimension; j++) {
+            for (j = 0; j < heightDimension; j++) {
                 if (i % (1 << j) === 0) {
-                    this.summedLineHeights[i] += 1;
+                    this.summedLineHeights[i] += line_increment;
                 }
             }
         }
@@ -280,19 +285,20 @@ function ColourHandler(view) {
 
 ColourHandler.prototype = {
     _init : function (view) {
-        this.gridLevelOffset = 0.3; // Grey level offset to distinguish bottom level from gridlines
+        // Grey level offset to distinguish bottom level from gridlines
+        this.gridOffset = 0.3;
         this.minValue = view.minValue;
-        this.maxValue = view.maxValue;
+        this.range = view.maxValue - view.minValue;
     },
 
     getLevel : function (value) {
-        var lvl;
-        if (this.maxValue === this.minValue) {
-            return 1.0;
+        var proportion;
+        if (this.range === 0.0) {
+            proportion = 1.0;
+        } else {
+            proportion = (value - this.minValue) / this.range;
         }
-        lvl = this.gridLevelOffset + (1 - this.gridLevelOffset) *
-            ((value - this.minValue) / (this.maxValue - this.minValue));
-        return lvl;
+        return this.gridOffset + (1 - this.gridOffset) * proportion;
     },
 
     grey : function (value) {
