@@ -1,9 +1,11 @@
+"use strict";
 
 var State = {
 
     fromInt : function(size, integer) {
-        var state = new Array(size);
-        for (var i = 0; i < size; i++) {
+        var state = new Array(size),
+            i = 0;
+        for (i = 0; i < size; i++) {
             state[i] = integer & (1 << (size - 1 - i));
         }
         return state;
@@ -31,7 +33,7 @@ var State = {
 
     hamming : function(state1, state2) {
         if (state1.length != state2.length) {
-            return; // FIXME: null?
+            return;
         }
         var hamming = 0;
         for (var i = 0, len = state1.length; i < len; ++i) {
@@ -52,57 +54,54 @@ var State = {
 };
 
 
-function SchemaParseException(message) {
-    this.message = message;
-    this.name = "SchemaParseException";
-}
-SchemaParseException.prototype.toString = function () {
-  return "Error parsing schema: " + this.message;
-}
-
-
 
 var Schema = {
+
     starIndices : function (schema) {
         var starIndices = [];
-        for (var i = 0, len = schema.length; i < len; ++i) {
-            if (schema[i] === "*") {
-                starIndices.push(i);
+        _.each(schema, function (element, index, list) {
+            if (element === "*") {
+                starIndices.push(index);
             }
-        }
+        });
         return starIndices;
     },
 
     states : function (schema) {
         var starIndices = Schema.starIndices(schema);
-        var numStates = 1 << starIndices.length;
-        var states = Array(numStates);
-        for (var i = 0; i < numStates; ++i) {
-            var fillValues = State.fromInt(starIndices.length, i);
-            var state = new Array(schema.length);
-            for (var j = 0, len = schema.length; j < len; ++j) {
+        var schemaLength = schema.length;
+        var wildcards = starIndices.length;
+
+        var states = _.map(_.range(1 << wildcards), function (index) {
+            var j;
+            var fillValues = State.fromInt(wildcards, index);
+            var state = new Array(schemaLength);
+            for (j = 0; j < schemaLength; ++j) {
                 state[j] = schema[j] == "1";
             }
-            for (var j = 0, len = starIndices.length; j < len; ++j) {
+            for (j = 0; j < wildcards; ++j) {
                 state[starIndices[j]] = fillValues[j];
             }
-            states[i] = state;
-        }
+            return state;
+        });
         return states;
     },
 
-    parseToValues : function (text) {
-        var values = new Array();
-        var lines = text.split("\n");
+    parseToValues : function (text, callback) {
         var dims;
+        var values = [];
+        var lines;
+
+        lines = text.split("\n");
+        lines = _.filter(lines, function (l) { return l.length !== 0; });
 
         // Check for a header
         if (lines[0][0] == "#") {
-            var midSplit = line.split(":");
+            var midSplit = lines[0][0].split(":");
             if (midSplit.length != 2) {
-                throw new SchemaParseException("Incorrect header syntax; see description");
+                return callback("Incorrect header syntax", null);
             }
-            var posterior = midSplit[1]
+            var posterior = midSplit[1];
             var dimensions = midSplit[0].split(",");
 
             // FIXME: Do something with the header
@@ -110,45 +109,40 @@ var Schema = {
             lines.splice(0, 1);
         }
 
-        for (var i = 0, len = lines.length; i < len; ++i) {
-            var line = lines[i];
 
-            // Discard empty lines, e.g., EOF
-            if (line.length == 0) {
-                continue;
-            }
+        // Parse the space body; one schema per line
+        _.each(lines, function (line, index, list) {
 
             var midSplit = line.split(":");
             if (midSplit.length != 2) {
-                throw new SchemaParseException("Incorrect schema syntax; see description");
+                return callback("Incorrect schema syntax", null);
             }
 
             // FIXME: We need to unify handling of categorical (e.g., integer) vs continuous (i.e., double) values
-//            var value = parseInt(midSplit.pop(), 10);
-            var value = parseFloat(midSplit.pop());
             var schema = midSplit[0].split(",");
+//            var value = parseInt(midSplit.pop(), 10);
+            var value = parseFloat(midSplit[1]);
 
-            if (dims && dims != schema.length) {
-                throw new SchemaParseException("Schemas are different lengths");
+            if (!dims) {
+                dims = schema.length;
+            } else if (dims != schema.length) {
+                return callback("Error parsing schema: Schemas have different lengths", null);
             }
 
-            var states = Schema.states(schema);
-            for (var j = 0, len2 = states.length; j < len2; ++j) {
-                var stateInt = State.asInt(states[j]);
-                if (values[stateInt] != undefined && values[stateInt] != value) {
-                    throw new SchemaParseException("Multiple different values defined for state " + states[j]);
+            _.each(Schema.states(schema), function (state, index, list) {
+                var stateInt = State.asInt(state);
+                if (values[stateInt] !== undefined && values[stateInt] !== value) {
+                    return callback("Multiple different values defined for state " + state, null);
                 }
                 values[stateInt] = value;
-            }
-            dims = schema.length;
+            });
+        });
+
+        if (_.any(values, _.isUndefined)) {
+            return callback("Value(s) left undefined; maybe schemas don't fully cover the space", null);
         }
 
-        for (var i = 0, len = values.length; i < len; ++i) {
-            if (values[i] == undefined) {
-                throw new SchemaParseException("Value(s) left undefined; maybe schemas don't fully cover the space");
-            }
-        }
-
-        return values;
+        return callback(null, values);
     }
 };
+

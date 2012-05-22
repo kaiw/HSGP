@@ -1,17 +1,5 @@
 "use strict";
 
-// FIXME: improve class
-// Used for both Layout-related and Canvas-related coordinates
-function Point(x, y) {
-    this.x = x;
-    this.y = y;
-
-    this.valid = function () {
-        return (this.x >= 0 && this.y >= 0);
-    };
-}
-
-
 
 function HSGPCanvas(canvas) {
     this._init(canvas);
@@ -20,7 +8,6 @@ function HSGPCanvas(canvas) {
 HSGPCanvas.prototype = {
     _init : function (canvas) {
         this.canvasElement = canvas;
-        this.canvas = this.canvasElement.getContext("2d");
         this.stateValues = new StateValues(4);
         this.updateStateValues();
     },
@@ -42,8 +29,18 @@ HSGPCanvas.prototype = {
         this.highlights = highlights;
     },
 
+    validPoint : function (point) {
+        if (point === null || point === undefined ||
+            point.x < 0 || point.y < 0 ||
+            point.x > _.last(this.xIndexCoord) ||
+            point.y > _.last(this.yIndexCoord)) {
+            return false;
+        }
+        return true;
+    },
+
     setSelectedPoint : function (point) {
-        if (point !== null && point.valid()) {
+        if (this.validPoint(point)) {
             this.selected = point;
         } else {
             this.selected = null;
@@ -51,7 +48,7 @@ HSGPCanvas.prototype = {
     },
 
     getSelectedState : function () {
-        if (this.selected !== null && this.selected.valid()) {
+        if (this.validPoint(this.selected)) {
             return this.layout.pointToState(this.selected);
         }
         return null;
@@ -84,32 +81,33 @@ HSGPCanvas.prototype = {
     },
 
     draw : function () {
-        this.canvas.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
-        this.canvas.fillStyle = "black";
-        this.canvas.fillRect(0, 0, this.totalWidth, this.totalHeight);
-        this.drawBase();
-        this.drawHighlights();
+        var canvas = this.canvasElement.getContext("2d");
+        canvas.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+        canvas.fillStyle = "black";
+        canvas.fillRect(0, 0, this.totalWidth, this.totalHeight);
+        this.drawBase(canvas);
+        this.drawHighlights(canvas);
     },
 
-    drawBase : function () {
+    drawBase : function (canvas) {
         var i, len, state, stateValue, coord;
         for (i = 0, len = this.stateValues.states.length; i < len; ++i) {
             state = this.stateValues.states[i];
             stateValue = this.stateValues.valueInt(i);
             coord = this.layoutToCanvas(this.layout.stateToPoint(state));
-            this.canvas.fillStyle = this.colours.grey(stateValue);
-            this.canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
+            canvas.fillStyle = this.colours.grey(stateValue);
+            canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
         }
     },
 
-    drawHighlights : function () {
+    drawHighlights : function (canvas) {
         var coord;
         var targetValue = 0;
-        if (this.selected !== null && this.selected.valid ()) {
+        if (this.validPoint(this.selected)) {
             targetValue = this.stateValues.value(this.layout.pointToState(this.selected));
-            this.canvas.fillStyle = this.colours.green(targetValue);
+            canvas.fillStyle = this.colours.green(targetValue);
             coord = this.layoutToCanvas(this.selected);
-            this.canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
+            canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
         }
 
         for (var i = 0, len = this.highlights.length; i < len; i++) {
@@ -124,29 +122,21 @@ HSGPCanvas.prototype = {
             }
 
             coord = this.layoutToCanvas(point);
-            this.canvas.fillStyle = col;
-            this.canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
+            canvas.fillStyle = col;
+            canvas.fillRect(coord.x, coord.y, this.pointWidth, this.pointHeight);
         }
     },
 
     layoutToCanvas : function (point) {
-        return new Point(this.xIndexCoord[point.x], this.yIndexCoord[point.y]);
+        return {"x" : this.xIndexCoord[point.x],
+                "y" : this.yIndexCoord[point.y]};
     },
 
     canvasToLayout : function (coord) {
-        if (coord.x < 0 || coord.y < 0 ||
-            coord.x > this.xIndexCoord[this.xIndexCoord.length - 1] ||
-            coord.y > this.yIndexCoord[this.yIndexCoord.length - 1]) {
-            return null;
+        if (this.validPoint(coord)) {
+            return {"x" : _.sortedIndex(this.xIndexCoord, coord.x) - 1,
+                    "y" : _.sortedIndex(this.yIndexCoord, coord.y) - 1};
         }
-        var x = 0, y = 0;
-        while (coord.x > this.xIndexCoord[x + 1]) {
-            x++;
-        }
-        while (coord.y > this.yIndexCoord[y + 1]) {
-            y++;
-        }
-        return new Point(x, y);
     }
 };
 
@@ -207,17 +197,14 @@ RecursiveLayout.prototype = {
         if (state.length !== this.dims) {
             return null;
         }
-        var i = 0, x = 0, y = 0;
-        for (; i < this.dims; ++i) {
-            if (state[i]) {
-                if (i % 2 === 0) {
-                    x += 1 << (i / 2);
-                } else {
-                    y += 1 << ((i - 1) / 2);
-                }
-            }
-        }
-        return new Point(x, y);
+        var x = 0, y = 0;
+        _.each(_.range(0, state.length, 2), function (index) {
+            x += state[index] ? 1 << (index / 2) : 0;
+        });
+        _.each(_.range(1, state.length, 2), function (index) {
+            y += state[index] ? 1 << ((index - 1) / 2) : 0;
+        });
+        return {"x" : x, "y" : y};
     },
 
     pointToState : function (point) {

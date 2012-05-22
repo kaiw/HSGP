@@ -33,7 +33,7 @@ function setup () {
             return;
         }
 
-        var selected = hsgp.canvasToLayout(new Point(x, y));
+        var selected = hsgp.canvasToLayout({"x" : x, "y" : y});
         hsgp.setSelectedPoint(selected);
         selectedChanged();
     });
@@ -54,7 +54,7 @@ function selectedChanged() {
     var selectedState = hsgp.getSelectedState();
     var neighbours;
     if (selectedState === null) {
-        neighbours = new Array();
+        neighbours = [];
         $("#SelectedStateLabel").html("None");
     }
     else {
@@ -85,15 +85,14 @@ function loadSchemaFile(file) {
 }
 
 function loadSchemaFileCallback(data) {
-    try {
-        var values = Schema.parseToValues(data);
-    }
-    catch (e) {
-        setStatus(e, "alert-error");
-        return;
-    }
-    setStatus("Schema loaded", "alert-success");
-    hsgp.updateStateValues(values);
-    hsgp.setSelectedPoint(null);
-    selectedChanged();
+    Schema.parseToValues(data, function (err, result) {
+        if (err) {
+            setStatus(err, "alert-error");
+            return;
+        }
+        setStatus("Schema loaded", "alert-success");
+        hsgp.updateStateValues(result);
+        hsgp.setSelectedPoint(null);
+        selectedChanged();
+    });
 }
