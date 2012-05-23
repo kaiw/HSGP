@@ -52,11 +52,7 @@ HSGPCanvas.prototype = {
     },
 
     setSelectedPoint : function (point) {
-        if (this.validPoint(point)) {
-            this.selected = point;
-        } else {
-            this.selected = null;
-        }
+        this.selected = this.validPoint(point) ? point : null;
         this.updateHighlights();
     },
 
@@ -71,9 +67,11 @@ HSGPCanvas.prototype = {
         var i,
             width = this.canvasElement.width,
             height = this.canvasElement.height,
-            grid = new Grid(this.layout.width, this.layout.height),
-            totalGridWidth = _.last(grid.summedLineWidths),
-            totalGridHeight = _.last(grid.summedLineHeights);
+            grid = this.calculateGrid(this.layout.width, this.layout.height);
+        var summedLineWidths = grid[0],
+            summedLineHeights = grid[1],
+            totalGridWidth = _.last(summedLineWidths),
+            totalGridHeight = _.last(summedLineHeights);
         this.pointWidth = Math.floor((width - totalGridWidth) / this.layout.width);
         this.pointHeight = Math.floor((height - totalGridHeight) / this.layout.height);
         this.totalWidth = this.pointWidth * this.layout.width + totalGridWidth;
@@ -81,16 +79,54 @@ HSGPCanvas.prototype = {
 
         this.xIndexCoord = new Array(this.layout.width + 1);
         for (i = 0; i < this.layout.width; i++) {
-            this.xIndexCoord[i] = (i * this.pointWidth) + grid.summedLineWidths[i];
+            this.xIndexCoord[i] = (i * this.pointWidth) + summedLineWidths[i];
         }
         this.xIndexCoord[i] = this.xIndexCoord[i - 1] + this.pointWidth;
 
         this.yIndexCoord = new Array(this.layout.height + 1);
         for (i = 0; i < this.layout.height; i++) {
-            this.yIndexCoord[i] = (i * this.pointHeight) + grid.summedLineHeights[i];
+            this.yIndexCoord[i] = (i * this.pointHeight) + summedLineHeights[i];
         }
         this.yIndexCoord[i] = this.yIndexCoord[i - 1] + this.pointHeight;
         this.draw();
+    },
+
+
+
+    calculateGrid : function (width, height) {
+        var line_increment = 1;
+        var borderWidth = 4;
+        var widthDimension = Math.log(width) / Math.LN2;
+        var heightDimension = Math.log(height) / Math.LN2;
+        var i, j;
+
+        var running_total = borderWidth;
+        var summedLineWidths = [running_total];
+        for (i = 1; i < width; ++i) {
+            for (j = 0; j < widthDimension; j++) {
+                if (i % (1 << j) === 0) {
+                    running_total += line_increment;
+                }
+            }
+            summedLineWidths.push(running_total);
+        }
+        running_total += borderWidth;
+        summedLineWidths.push(running_total);
+
+
+        running_total = borderWidth;
+        var summedLineHeights = [running_total];
+        for (i = 1; i < height; ++i) {
+            for (j = 0; j < heightDimension; j++) {
+                if (i % (1 << j) === 0) {
+                    running_total += line_increment;
+                }
+            }
+            summedLineHeights.push(running_total);
+        }
+        running_total += borderWidth;
+        summedLineHeights.push(running_total);
+        return [summedLineWidths, summedLineHeights];
     },
 
     draw : function () {
@@ -234,46 +270,6 @@ RecursiveLayout.prototype = {
             state[i * 2 + 1] = Boolean(point.y & 1 << i);
         }
         return state;
-    }
-};
-
-
-
-function Grid(width, height) {
-    this._init(width, height);
-}
-
-Grid.prototype = {
-    _init : function (width, height) {
-        var line_increment = 1;
-        var borderWidth = 4;
-        var widthDimension = Math.log(width) / Math.LN2;
-        var heightDimension = Math.log(height) / Math.LN2;
-        var i, j;
-
-        this.summedLineWidths = new Array(width + 1);
-        this.summedLineWidths[0] = borderWidth;
-        for (i = 1; i < width; ++i) {
-            this.summedLineWidths[i] = this.summedLineWidths[i - 1];
-            for (j = 0; j < widthDimension; j++) {
-                if (i % (1 << j) === 0) {
-                    this.summedLineWidths[i] += line_increment;
-                }
-            }
-        }
-        this.summedLineWidths[width] = this.summedLineWidths[i - 1] + borderWidth;
-
-        this.summedLineHeights = new Array(height + 1);
-        this.summedLineHeights[0] = borderWidth;
-        for (i = 1; i < height; ++i) {
-            this.summedLineHeights[i] = this.summedLineHeights[i - 1];
-            for (j = 0; j < heightDimension; j++) {
-                if (i % (1 << j) === 0) {
-                    this.summedLineHeights[i] += line_increment;
-                }
-            }
-        }
-        this.summedLineHeights[height] = this.summedLineHeights[i - 1] + borderWidth;
     }
 };
 
