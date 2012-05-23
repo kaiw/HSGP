@@ -6,6 +6,7 @@ function HSGPCanvas(canvas) {
 }
 
 HSGPCanvas.prototype = {
+
     _init : function (canvas) {
         this.canvasElement = canvas;
         this.stateValues = new StateValues(4);
@@ -25,8 +26,19 @@ HSGPCanvas.prototype = {
         this.canvasSizeChanged();
     },
 
-    updateHighlights : function (highlights) {
-        this.highlights = highlights;
+    updateHighlights : function () {
+        var selectedState = this.getSelectedState();
+        if (selectedState === null) {
+            this.highlights = [];
+            // FIXME: jquery brokenness
+            $("#SelectedStateLabel").html("None");
+        }
+        else {
+            this.highlights = State.neighbours(selectedState);
+            $("#SelectedStateLabel").html("[" + State.toString(selectedState) + "]");
+        }
+
+        this.draw();
     },
 
     validPoint : function (point) {
@@ -45,6 +57,7 @@ HSGPCanvas.prototype = {
         } else {
             this.selected = null;
         }
+        this.updateHighlights();
     },
 
     getSelectedState : function () {

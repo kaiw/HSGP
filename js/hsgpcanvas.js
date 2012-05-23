@@ -1,16 +1,34 @@
-var hsgp;
+
 var statusTimeoutId;
 
 function setup () {
-    hsgp = new HSGPCanvas($("#HSGPCanvas")[0]);
+    var hsgp = new HSGPCanvas($("#HSGPCanvas")[0]);
     statusTimeoutId = null;
 
-    function addSchemaLink (file, label, where) {
-        var link = "javascript:loadSchemaFile('schemas/" + file + ".schema'); return false;";
-        var whole = "<a href=\"#\" onclick=\"" + link + "\">" + label + "</a><br>";
-        $(where).append(whole);
+
+    function loadSchemaFileCallback(data) {
+        Schema.parseToValues(data, function (err, result) {
+            if (err) {
+                setStatus(err, "alert-error");
+                return;
+            }
+            setStatus("Schema loaded", "alert-success");
+            hsgp.updateStateValues(result);
+            hsgp.setSelectedPoint(null);
+        });
     }
 
+
+    function addSchemaLink (file, label, where) {
+        $("<a href='#'>" + label + "</a><br />")
+                .appendTo(where)
+                .click(function (e) {
+            var timestamp = (new Date()).getTime();
+            file = "schemas/" + file + ".schema";
+            $.get(file, {"t" : timestamp}, loadSchemaFileCallback, "text");
+            return false;
+        });
+    }
 
     addSchemaLink("growthAttractor9", "Attractor 9 states", "#GrowthSelector");
     addSchemaLink("growthAttractor37", "Attractor 37 states", "#GrowthSelector");
@@ -35,7 +53,6 @@ function setup () {
 
         var selected = hsgp.canvasToLayout({"x" : x, "y" : y});
         hsgp.setSelectedPoint(selected);
-        selectedChanged();
     });
 
     // TODO: Live-resizing could be very slow for high-dimensional canvases.
@@ -50,21 +67,6 @@ function setup () {
     $(window).resize();
 }
 
-function selectedChanged() {
-    var selectedState = hsgp.getSelectedState();
-    var neighbours;
-    if (selectedState === null) {
-        neighbours = [];
-        $("#SelectedStateLabel").html("None");
-    }
-    else {
-        neighbours = State.neighbours(selectedState);
-        $("#SelectedStateLabel").html("[" + State.toString(selectedState) + "]");
-    }
-    hsgp.updateHighlights(neighbours);
-    hsgp.draw();
-}
-
 function setStatus(msg, cls) {
     if (statusTimeoutId !== null) {
         clearTimeout(statusTimeoutId);
@@ -77,22 +79,4 @@ function setStatus(msg, cls) {
     status.fadeIn("normal");
     statusTimeoutId = setTimeout(function () {statusTimeoutId = null; status.fadeOut("normal");}, 3000);
     // FIXME: if it times out, it re-shows properly. If it's manually dismissed, it never comes back
-}
-
-function loadSchemaFile(file) {
-    var timestamp = (new Date()).getTime();
-    jQuery.get(file, {"t" : timestamp}, loadSchemaFileCallback, "text");
-}
-
-function loadSchemaFileCallback(data) {
-    Schema.parseToValues(data, function (err, result) {
-        if (err) {
-            setStatus(err, "alert-error");
-            return;
-        }
-        setStatus("Schema loaded", "alert-success");
-        hsgp.updateStateValues(result);
-        hsgp.setSelectedPoint(null);
-        selectedChanged();
-    });
 }
