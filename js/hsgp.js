@@ -35,7 +35,7 @@ HSGPCanvas.prototype = {
         }
         else {
             this.highlights = State.neighbours(selectedState);
-            this.selectedLabel.html("[" + State.toString(selectedState) + "]");
+            this.selectedLabel.html("<span style='font-family: monospace'>[" + State.toString(selectedState) + "]</span>");
         }
 
         this.draw();

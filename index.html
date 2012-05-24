@@ -67,9 +67,24 @@
         <div class="span8 offset1">
           <div id="CanvasContainer">
             <canvas id="HSGPCanvas"></canvas>
-            <div>
-              Selected state: <span id="SelectedStateLabel"></span>
-            </div>
+            <form class="form-horizontal">
+              <fieldset>
+                <div class="control-group">
+                  <label class="control-label">Selected state: </label>
+                  <div class="controls">
+                    <span id="SelectedStateLabel" class="input-xlarge uneditable-input"></span>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="selectHighlight">Highlight:</label>
+                  <div class="controls">
+                    <select id="selectHighlight" selected="Neighbours">
+                      <option value="neighbours" selected>Neighbours</option>
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
           </div>
         </div>
 
