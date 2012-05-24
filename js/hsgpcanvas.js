@@ -1,10 +1,7 @@
 
-var statusTimeoutId;
-
 function setup () {
-    var hsgp = new HSGPCanvas($("#HSGPCanvas")[0]);
-    statusTimeoutId = null;
-
+    var hsgp = new HSGPCanvas($("#HSGPCanvas")[0], $("#SelectedStateLabel"));
+    var status = new StatusMessage($("#Status"), $("#StatusLabel"));
 
     function loadSchemaFileCallback(data) {
         Schema.parseToValues(data, function (err, result) {
@@ -12,7 +9,7 @@ function setup () {
                 setStatus(err, "alert-error");
                 return;
             }
-            setStatus("Schema loaded", "alert-success");
+            status.setStatus("Schema loaded", "alert-success");
             hsgp.updateStateValues(result);
             hsgp.setSelectedPoint(null);
         });
@@ -20,12 +17,12 @@ function setup () {
 
 
     function addSchemaLink (file, label, where) {
+        var path = "schemas/" + file + ".schema";
         $("<a href='#'>" + label + "</a><br />")
                 .appendTo(where)
                 .click(function (e) {
             var timestamp = (new Date()).getTime();
-            file = "schemas/" + file + ".schema";
-            $.get(file, {"t" : timestamp}, loadSchemaFileCallback, "text");
+            $.get(path, {"t" : timestamp}, loadSchemaFileCallback, "text");
             return false;
         });
     }
@@ -67,16 +64,32 @@ function setup () {
     $(window).resize();
 }
 
-function setStatus(msg, cls) {
-    if (statusTimeoutId !== null) {
-        clearTimeout(statusTimeoutId);
-        statusTimeoutId = null;
-    }
-    var status = $("#Status");
-    status.stop(false, true); // FIXME: what?
-    status.removeClass("alert-success alert-error").addClass(cls);
-    $("#StatusLabel").html(document.createTextNode(msg));
-    status.fadeIn("normal");
-    statusTimeoutId = setTimeout(function () {statusTimeoutId = null; status.fadeOut("normal");}, 3000);
-    // FIXME: if it times out, it re-shows properly. If it's manually dismissed, it never comes back
+
+function StatusMessage(el, label) {
+    this._init(el, label);
 }
+
+StatusMessage.prototype = {
+
+    _init: function (el, label) {
+        this.el = el;
+        this.label = label;
+    },
+
+    setStatus: function (msg, cls) {
+        if (this.statusTimeoutId) {
+            clearTimeout(this.statusTimeoutId);
+            this.statusTimeoutId = null;
+        }
+        this.el.stop(false, true);
+        this.el.removeClass("alert-success alert-error").addClass(cls);
+        this.label.html(document.createTextNode(msg));
+        this.el.fadeIn("normal");
+
+        var that = this;
+        this.statusTimeoutId = setTimeout(function () {
+                that.statusTimeoutId = null;
+                that.el.fadeOut("normal");
+            }, 2000);
+    }
+};

@@ -1,14 +1,15 @@
 "use strict";
 
 
-function HSGPCanvas(canvas) {
-    this._init(canvas);
+function HSGPCanvas(canvas, selectedLabel) {
+    this._init(canvas, selectedLabel);
 }
 
 HSGPCanvas.prototype = {
 
-    _init : function (canvas) {
+    _init : function (canvas, selectedLabel) {
         this.canvasElement = canvas;
+        this.selectedLabel = selectedLabel;
         this.stateValues = new StateValues(4);
         this.updateStateValues();
     },
@@ -30,12 +31,11 @@ HSGPCanvas.prototype = {
         var selectedState = this.getSelectedState();
         if (selectedState === null) {
             this.highlights = [];
-            // FIXME: jquery brokenness
-            $("#SelectedStateLabel").html("None");
+            this.selectedLabel.html("None");
         }
         else {
             this.highlights = State.neighbours(selectedState);
-            $("#SelectedStateLabel").html("[" + State.toString(selectedState) + "]");
+            this.selectedLabel.html("[" + State.toString(selectedState) + "]");
         }
 
         this.draw();
@@ -72,8 +72,10 @@ HSGPCanvas.prototype = {
             summedLineHeights = grid[1],
             totalGridWidth = _.last(summedLineWidths),
             totalGridHeight = _.last(summedLineHeights);
-        this.pointWidth = Math.floor((width - totalGridWidth) / this.layout.width);
-        this.pointHeight = Math.floor((height - totalGridHeight) / this.layout.height);
+        var minDimension = _.min([
+            Math.floor((width - totalGridWidth) / this.layout.width),
+            Math.floor((height - totalGridHeight) / this.layout.height)]);
+        this.pointWidth = this.pointHeight = minDimension;
         this.totalWidth = this.pointWidth * this.layout.width + totalGridWidth;
         this.totalHeight = this.pointHeight * this.layout.height + totalGridHeight;
 
